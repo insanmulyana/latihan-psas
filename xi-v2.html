@@ -440,14 +440,14 @@ function kirimRekap(){
  const {h,c,dur,nc}=ringkas();S.kirim={st:"proses"};statusKirim();
  jsonp({action:"kirim",id:S.id,versi:CFG.VERSI,nama:S.ident.nama,kelas:S.ident.kelas,absen:S.ident.absen,ke:S.ke,
   mulai:stamp(new Date(S.t0)),selesai:stamp(new Date(S.res.t1)),durasi:dur,nilai:h.total,benar:c.Benar,sebagian:c.Sebagian,salah:c.Salah,kosong:c.Kosong,
-  keluar:S.keluar||0,cek:nc,alasan:S.res.alasan,skor:h.rows.map(r=>r.skor).join("|"),maks:h.rows.map(r=>r.it.maks).join("|"),jawab:h.rows.map(r=>r.jawab).join("|")},20000)
+  keluar:S.keluar||0,cek:nc,alasan:S.res.alasan,skor:h.rows.map(r=>r.skor).join("|"),maks:h.rows.map(r=>r.it.maks).join("|"),jawab:h.rows.map(r=>r.jawab).join("|")},60000)
  .then(r=>{S.kirim={st:(r&&r.ok)?"ok":"gagal",t:Date.now(),e:r&&r.error};save();statusKirim();})
  .catch(e=>{S.kirim={st:"gagal",e:String(e.message||e)};save();statusKirim();});}
 function statusKirim(){const el=$("kst");if(!el)return;const st=S.kirim?S.kirim.st:"";
  if(st==="ok")el.innerHTML='<div class="fbmsg s-ok">✓ Nilaimu sudah tercatat otomatis di rekap guru.</div>';
  else if(st==="proses")el.innerHTML='<div class="fbmsg s-kos">⏳ Mengirim nilai ke rekap guru…</div>';
  else if(st==="nonaktif")el.innerHTML="";
- else{el.innerHTML='<div class="fbmsg s-bad">⚠ Nilai belum terkirim ke rekap guru (periksa koneksi internet).<div class="btnrow"><button id="btnRetry" class="pri">Kirim ulang</button></div></div>';$("btnRetry").onclick=kirimRekap;}}
+ else{el.innerHTML='<div class="fbmsg s-bad">⚠ Nilai belum terkirim ke rekap guru (periksa koneksi internet, lalu tekan Kirim ulang).'+(S.kirim&&S.kirim.e?'<br><small>Keterangan: '+esc(S.kirim.e)+'</small>':'')+'<div class="btnrow"><button id="btnRetry" class="pri">Kirim ulang</button></div></div>';$("btnRetry").onclick=kirimRekap;}}
 function kodeHasil(){const {h}=ringkas();const o={v:CFG.VERSI,n:S.ident.nama,k:S.ident.kelas,a:S.ident.absen,p:S.ke,t:h.total,x:S.keluar||0,w:stamp(new Date(S.res.t1)),s:h.rows.map(r=>r.skor)};
  return "PSAS"+CFG.TINGKAT+":"+btoa(unescape(encodeURIComponent(JSON.stringify(o))));}
 function mailtoHref(){const {h,c,dur}=ringkas();
