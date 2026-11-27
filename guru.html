@@ -554,7 +554,17 @@ function attCount(key){const a=attLoad()[key];return a?a.length:0;}
 function attAdd(key,id){const all=attLoad();all[key]=all[key]||[];if(!all[key].some(x=>x.id===id))all[key].push({id:id,v:CFG.VERSI,t:Date.now()});try{localStorage.setItem(LSA,JSON.stringify(all));}catch(e){}return all[key].length;}
 
 /* ---------- komunikasi dengan rekap Google Sheet (JSONP) ---------- */
-function jsonp(params,ms){return new Promise((res,rej)=>{
+function jsonp(params,ms){
+ if(!CFG.URL_REKAP)return Promise.reject(new Error("nonaktif"));
+ const cb="psascb_"+uid(),q=new URLSearchParams(Object.assign({},params,{callback:cb}));
+ const u=CFG.URL_REKAP+(CFG.URL_REKAP.indexOf("?")>=0?"&":"?")+q.toString();
+ /* fetch tanpa cookie: tidak terganggu bila browser login dengan beberapa akun Google */
+ const lewatFetch=new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Error("waktu habis")),ms||15000);
+  fetch(u,{credentials:"omit",cache:"no-store",redirect:"follow"}).then(r=>{if(!r.ok)throw new Error("server "+r.status);return r.text();})
+  .then(x=>{const m=/^\s*[\w$]+\(([\s\S]*)\)\s*;?\s*$/.exec(x);if(!m)throw new Error("balasan bukan data");clearTimeout(t);res(JSON.parse(m[1]));})
+  .catch(e=>{clearTimeout(t);rej(e);});});
+ return lewatFetch.catch(e=>{if(params.action==="tambah"||/waktu habis/.test(e.message))throw e;return jsonpScript(params,ms);});}
+function jsonpScript(params,ms){return new Promise((res,rej)=>{
  if(!CFG.URL_REKAP){rej(new Error("nonaktif"));return;}
  const cb="psascb_"+uid();const s=document.createElement("script");let done=false;
  const fin=(f,v)=>{if(done)return;done=true;window[cb]=function(){};s.remove();f(v);};
