@@ -853,7 +853,7 @@ function renderPembahasanPage(n){
  if(CFG.MODE==="guru"){guruInit();return;}
  if(CFG.MODE==="pembahasan"){const m=/soal-(\d+)/.exec(location.hash||"");renderPembahasanPage(m?+m[1]:1);return;}
  const sv=load();
- if(sv&&sv.phase==="result"){S=Object.assign(fresh(),sv);renderResult();if(!S.kirim||S.kirim.st==="gagal"||S.kirim.st==="proses")kirimRekap();return;}
+ if(sv&&sv.phase==="result"){S=Object.assign(fresh(),sv);renderResult();if(!S.kirim||S.kirim.st==="gagal"||S.kirim.st==="proses"||S.kirim.st==="nonaktif")kirimRekap();return;}
  renderStart();})();
 </script>
 </body>
