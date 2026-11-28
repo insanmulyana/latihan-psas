@@ -223,6 +223,7 @@ function blocks(bl){return bl.map(b=>{
    ===================================================================== */
 const GH={owner:"insanmulyana",repo:"latihan-psas",branch:"main"};
 const VERS=[{id:"xi-v1",t:"XI",v:1},{id:"xi-v2",t:"XI",v:2},{id:"xii-v1",t:"XII",v:1},{id:"xii-v2",t:"XII",v:2}];
+const JML_SISWA=36;
 const KELAS_T={XI:["XI-F1","XI-F2","XI-F3","XI-F5"],XII:["XII-F1","XII-F4","XII-F6","XII-F8"]};
 const G={tab:"pratinjau",file:"xii-v1",no:1,data:{},orig:{},index:"",sched:null,schedOrig:"",token:"",rekapUrl:"",kunci:"",ingat:false,rekap:null,busy:false};
 
@@ -431,6 +432,15 @@ function tabRekap(){
   body='<div class="card"><div class="kv"><div><b>'+vis.length+'</b>Murid</div><div><b>'+String(avg).replace(".",",")+'</b>Rata-rata terbaik</div><div><b>'+tun+'</b>Tuntas (≥ 78)</div><div><b>'+(nil.length-tun)+'</b>Belum tuntas</div></div>'+
   '<div class="erow"><select id="rk"><option value="">Semua kelas</option>'+kls.map(k=>'<option'+(k===f?" selected":"")+">"+esc(k)+"</option>").join("")+'</select><input id="rq" placeholder="Cari nama/absen…" value="'+esc(G.fq||"")+'"></div>'+
   '<div class="tw"><table class="t rk"><thead><tr>'+head.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr></thead><tbody>"+vis.map(r=>"<tr>"+r.map((c,i)=>"<td"+(i===nilaiIdx?' class="'+(parseFloat(String(c).replace(",","."))>=78?"ok":"no")+'"':"")+">"+esc(c)+"</td>").join("")+"</tr>").join("")+'</tbody></table></div><div class="btnrow"><button id="rCopy">📋 Salin tabel (tempel ke Excel)</button></div><p class="small">Data per '+esc(new Date(R.waktu).toLocaleString("id-ID"))+".</p></div>";
+  const ia=head.indexOf("Absen"),ist=head.indexOf("Status terakhir"),info={};
+  rows.forEach(r=>{const k=String(r[0]).toUpperCase(),a=parseInt(r[ia],10);if(!a)return;const sel=String(r[nilaiIdx]).trim()!=="";(info[k]=info[k]||{})[a]=sel?"ok":"mulai";});
+  const semua=KELAS_T.XI.concat(KELAS_T.XII).filter(k=>!f||k===f);
+  const blm=semua.map(k=>{const m=info[k]||{},b=[],s=[];for(let a=1;a<=JML_SISWA;a++){if(!m[a])b.push(a);else if(m[a]==="mulai")s.push(a);}return{k,b,s,sel:JML_SISWA-b.length-s.length};});
+  G._blm=blm;
+  body+='<div class="card"><h3 style="margin-top:0">Belum mengerjakan (absen 1–'+JML_SISWA+')</h3><p class="small">Dihitung dari nilai yang sudah masuk rekap. <b>Sudah mulai</b> = sudah menekan Mulai tetapi belum mengumpulkan.</p>'+
+   '<div class="tw"><table class="t rk"><thead><tr><th>Kelas</th><th>Selesai</th><th>Belum mengerjakan</th><th>Sudah mulai, belum kumpul</th></tr></thead><tbody>'+
+   blm.map(x=>"<tr><td><b>"+x.k+"</b></td><td>"+x.sel+"/"+JML_SISWA+'</td><td class="'+(x.b.length?"no":"ok")+'">'+(x.b.length?x.b.length+" murid: "+x.b.join(", "):"Semua sudah ✓")+"</td><td>"+(x.s.length?x.s.join(", "):"–")+"</td></tr>").join("")+
+   '</tbody></table></div><div class="btnrow"><button id="bCopy">📋 Salin daftar (untuk dikirim ke grup kelas)</button></div></div>';
   const A=R.analisis||[];if(A.length>1){const ah=A[0],ar=A.slice(1).filter(r=>!f||String(r[0])===f.split("-")[0]);
    body+='<div class="card"><h3 style="margin-top:0">Analisis butir soal</h3><p class="small">Soal dengan capaian rendah (merah) paling perlu dibahas ulang di kelas.</p><div class="tw"><table class="t rk"><thead><tr>'+ah.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr></thead><tbody>"+ar.map(r=>{const p=parseFloat(String(r[ah.indexOf("% capaian")]).replace(",","."));return "<tr"+(p<50?' class="low"':"")+">"+r.map(c=>"<td>"+esc(c)+"</td>").join("")+"</tr>";}).join("")+"</tbody></table></div></div>";}}
  gShell('<div class="card"><div class="btnrow"><button id="rLoad" class="pri">🔄 '+(R?"Muat ulang":"Muat")+' rekap nilai</button></div></div>'+body+
@@ -438,6 +448,7 @@ function tabRekap(){
  $("rLoad").onclick=async()=>{flash("⏳ Memuat rekap…");try{const r=await rekapCall({action:"rekap"});if(!r||!r.ok)throw new Error(r&&r.error||"tidak ada jawaban");G.rekap=r;gRender();flash("✓ Rekap dimuat.","ok");}catch(e){flash("Gagal memuat rekap: "+esc(e.message||e)+". Periksa URL dan kata sandi guru di tab Pengaturan.","err");}};
  if($("rk"))$("rk").onchange=e=>{G.fk=e.target.value;gRender();};
  if($("rq"))$("rq").oninput=e=>{G.fq=e.target.value;clearTimeout(G._t);G._t=setTimeout(()=>{gRender();const x=$("rq");if(x){x.focus();x.setSelectionRange(x.value.length,x.value.length);}},350);};
+ if($("bCopy"))$("bCopy").onclick=()=>{const t=(G._blm||[]).filter(x=>x.b.length||x.s.length).map(x=>"Kelas "+x.k+(x.b.length?"\nBelum mengerjakan latihan PSAS: absen "+x.b.join(", "):"")+(x.s.length?"\nSudah mulai tetapi belum mengumpulkan: absen "+x.s.join(", "):"")).join("\n\n")||"Semua murid sudah mengerjakan.";navigator.clipboard.writeText(t).then(()=>toast("Daftar disalin. Tempel di grup WhatsApp kelas."),()=>toast("Gagal menyalin."));};
  if($("rCopy"))$("rCopy").onclick=()=>{const t=[...document.querySelectorAll("table.rk")][0];const txt=[...t.rows].map(r=>[...r.cells].map(c=>c.textContent).join("\t")).join("\n");navigator.clipboard.writeText(txt).then(()=>toast("Tabel disalin. Tempel di Excel atau Google Sheets."),()=>toast("Gagal menyalin."));};
  $("tGo").onclick=async()=>{const k=$("tk").value,a=$("ta").value.trim(),n=$("tn").value||1;if(!a){flash("Isi nomor absen.","err");return;}
   flash("⏳ Menambah kesempatan…");try{const r=await rekapCall({action:"tambah",kelas:k,absen:a,n:n});if(!r||!r.ok)throw new Error(r&&r.error||"gagal");flash("✓ "+esc(k)+" absen "+esc(a)+" mendapat "+esc(n)+" kesempatan tambahan.","ok");}catch(e){flash("Gagal: "+esc(e.message||e),"err");}};}
